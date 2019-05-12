@@ -1,0 +1,608 @@
+---
+swagger: "2.0"
+info:
+  description: "APIs supporting shrubbist.com"
+  version: "2019-05-12T18:17:11Z"
+  title: "production-serverless-nestjs"
+  license:
+    name: "MIT"
+    url: "https://github.com/iankerriganharris/shrubbist-apis/blob/master/LICENSE"
+host: "apis.shrubbist.com"
+basePath: "/1.0"
+schemes:
+- "https"
+paths:
+  /plants/heartbeat:
+    get:
+      summary: "check the health of the plants endpoint"
+      responses: {}
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Credentials:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+  /plants/search:
+    get:
+      summary: "search plants"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "q"
+        in: "query"
+        description: "the search term to use"
+        required: false
+        type: "string"
+      - name: "page.number"
+        in: "query"
+        description: "the page to return"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/plantList"
+        502:
+          description: "502 response"
+          schema:
+            $ref: "#/definitions/awsError"
+        503:
+          description: "503 response"
+          schema:
+            $ref: "#/definitions/serviceError"
+        404:
+          description: "404 response"
+          schema:
+            $ref: "#/definitions/notFoundError"
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Credentials:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+  /plants/{plantId}:
+    get:
+      summary: "get a plant by its id"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "plantId"
+        in: "path"
+        required: false
+        type: "string"
+      - name: "id"
+        in: "path"
+        description: "the id of the plant to get"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/onePlant"
+        502:
+          description: "502 response"
+          schema:
+            $ref: "#/definitions/awsError"
+        503:
+          description: "503 response"
+          schema:
+            $ref: "#/definitions/serviceError"
+        404:
+          description: "404 response"
+          schema:
+            $ref: "#/definitions/notFoundError"
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Credentials:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+definitions:
+  serviceError:
+    type: "object"
+    required:
+    - "message"
+    properties:
+      message:
+        type: "string"
+    description: "a service error usually with status code 503"
+  onePlant:
+    type: "object"
+    properties:
+      data:
+        $ref: "#/definitions/plant"
+      meta:
+        type: "object"
+        properties:
+          citation:
+            type: "string"
+    description: "response to get plant by id"
+  plant:
+    type: "object"
+    properties:
+      fruitConspicuous:
+        type: "string"
+        format: "string"
+      lifespan:
+        type: "string"
+        format: "string"
+      federalNoxiousStatus:
+        type: "string"
+        format: "string"
+      familySymbol:
+        type: "string"
+        format: "string"
+      frostFreeDaysMinimum:
+        type: "string"
+        format: "string"
+      division:
+        type: "string"
+        format: "string"
+      heightAtBaseAgeMaximumFeet:
+        type: "string"
+        format: "string"
+      adaptedToMediumuredSoils:
+        type: "string"
+        format: "string"
+      growthHabit:
+        type: "string"
+        format: "string"
+      activeGrowthPeriod:
+        type: "string"
+        format: "string"
+      trinomialAuthor:
+        type: "string"
+        format: "string"
+      subDivision:
+        type: "string"
+        format: "string"
+      coppicePotential:
+        type: "string"
+        format: "string"
+      id:
+        type: "string"
+        format: "uuid"
+      stateAndProvince:
+        type: "string"
+        format: "string"
+      foliagePorosityWinter:
+        type: "string"
+        format: "string"
+      invasive:
+        type: "string"
+        format: "string"
+      quadranomialAuthor:
+        type: "string"
+        format: "string"
+      christmasTreeProduct:
+        type: "string"
+        format: "string"
+      knownAllelopath:
+        type: "string"
+        format: "string"
+      foliageure:
+        type: "string"
+        format: "string"
+      precipitationMinimum:
+        type: "string"
+        format: "string"
+      genus:
+        type: "string"
+        format: "string"
+      propogatedByCuttings:
+        type: "string"
+        format: "string"
+      precipitationMaximum:
+        type: "string"
+        format: "string"
+      stateTEStatus:
+        type: "string"
+        format: "string"
+      propogatedByTubers:
+        type: "string"
+        format: "string"
+      subspecies:
+        type: "string"
+        format: "string"
+      seedsPerPound:
+        type: "string"
+        format: "string"
+      hybridSubspeciesIndicator:
+        type: "string"
+        format: "string"
+      fruitColor:
+        type: "string"
+        format: "string"
+      moistureUse:
+        type: "string"
+        format: "string"
+      smallGrain:
+        type: "string"
+        format: "string"
+      rootDepthMinimumInches:
+        type: "string"
+        format: "string"
+      growthForm:
+        type: "string"
+        format: "string"
+      shapeAndOrientation:
+        type: "string"
+        format: "string"
+      cNRatio:
+        type: "string"
+        format: "string"
+      fireResistance:
+        type: "string"
+        format: "string"
+      variety:
+        type: "string"
+        format: "string"
+      vegetativeSpreadRate:
+        type: "string"
+        format: "string"
+      acceptedSymbolY:
+        type: "string"
+        format: "string"
+      veneerProduct:
+        type: "string"
+        format: "string"
+      acceptedSymbolX:
+        type: "string"
+        format: "string"
+      hedgeTolerance:
+        type: "string"
+        format: "string"
+      postProduct:
+        type: "string"
+        format: "string"
+      lumberProduct:
+        type: "string"
+        format: "string"
+      subClass:
+        type: "string"
+        format: "string"
+      synonymSymbolY:
+        type: "string"
+        format: "string"
+      synonymSymbolX:
+        type: "string"
+        format: "string"
+      stateTECommonName:
+        type: "string"
+        format: "string"
+      resproutAbility:
+        type: "string"
+        format: "string"
+      superDivision:
+        type: "string"
+        format: "string"
+      fruitSeedPersistence:
+        type: "string"
+        format: "string"
+      pulpwoodProduct:
+        type: "string"
+        format: "string"
+      palatableGrazeAnimal:
+        type: "string"
+        format: "string"
+      stateNoxiousStatus:
+        type: "string"
+        format: "string"
+      propogatedByBareRoot:
+        type: "string"
+        format: "string"
+      species:
+        type: "string"
+        format: "string"
+      generaBinomialAuthor:
+        type: "string"
+        format: "string"
+      familyCommonName:
+        type: "string"
+        format: "string"
+      hybridVarietyIndicator:
+        type: "string"
+        format: "string"
+      flowerColor:
+        type: "string"
+        format: "string"
+      hybridSpeciesIndicator:
+        type: "string"
+        format: "string"
+      hybridGenusIndicator:
+        type: "string"
+        format: "string"
+      nurseryStockProduct:
+        type: "string"
+        format: "string"
+      toxicity:
+        type: "string"
+        format: "string"
+      commonName:
+        type: "string"
+        format: "string"
+      symbol:
+        type: "string"
+        format: "string"
+      bloomPeriod:
+        type: "string"
+        format: "string"
+      flowerConspicuous:
+        type: "string"
+        format: "string"
+      varietyPrefix:
+        type: "string"
+        format: "string"
+      commercialAvailability:
+        type: "string"
+        format: "string"
+      formaPrefix:
+        type: "string"
+        format: "string"
+      seedSpreadRate:
+        type: "string"
+        format: "string"
+      subvarietyPrefix:
+        type: "string"
+        format: "string"
+      propogatedByCorms:
+        type: "string"
+        format: "string"
+      heightMatureFeet:
+        type: "string"
+        format: "string"
+      fruitSeedPeriodBegin:
+        type: "string"
+        format: "string"
+      fruitSeedPeriodEnd:
+        type: "string"
+        format: "string"
+      anaerobicTolerance:
+        type: "string"
+        format: "string"
+      subspeciesPrefix:
+        type: "string"
+        format: "string"
+      foliageColor:
+        type: "string"
+        format: "string"
+      leafRetention:
+        type: "string"
+        format: "string"
+      subvariety:
+        type: "string"
+        format: "string"
+      fireTolerance:
+        type: "string"
+        format: "string"
+      salinityTolerance:
+        type: "string"
+        format: "string"
+      navalStoreProduct:
+        type: "string"
+        format: "string"
+      proteinPotential:
+        type: "string"
+        format: "string"
+      serialIdlong:
+        type: "string"
+        format: "string"
+      fertilityRequirement:
+        type: "string"
+        format: "string"
+      questionableTaxonIndicator:
+        type: "string"
+        format: "string"
+      propogatedBySprigs:
+        type: "string"
+        format: "string"
+      caCo3Tolerance:
+        type: "string"
+        format: "string"
+      subKingdom:
+        type: "string"
+        format: "string"
+      federalTEStatus:
+        type: "string"
+        format: "string"
+      parents:
+        type: "string"
+        format: "string"
+      berryNutSeedProduct:
+        type: "string"
+        format: "string"
+      nativeStatus:
+        type: "string"
+        format: "string"
+      adaptedToCoarseuredSoils:
+        type: "string"
+        format: "string"
+      adaptedToFineuredSoils:
+        type: "string"
+        format: "string"
+      growthRate:
+        type: "string"
+        format: "string"
+      forma:
+        type: "string"
+        format: "string"
+      fruitSeedAbundance:
+        type: "string"
+        format: "string"
+      bloat:
+        type: "string"
+        format: "string"
+      propogatedBySeed:
+        type: "string"
+        format: "string"
+      duration:
+        type: "string"
+        format: "string"
+      scientificNameX:
+        type: "string"
+        format: "string"
+      scientificNameY:
+        type: "string"
+        format: "string"
+      fodderProduct:
+        type: "string"
+        format: "string"
+      plantingDensityPerAcreMaximum:
+        type: "string"
+        format: "string"
+      nitrogenFixation:
+        type: "string"
+        format: "string"
+      class:
+        type: "string"
+        format: "string"
+      shadeTolerance:
+        type: "string"
+        format: "string"
+      xOrder:
+        type: "string"
+        format: "string"
+      afterHarvestRegrowthRate:
+        type: "string"
+        format: "string"
+      seedlingVigor:
+        type: "string"
+        format: "string"
+      droughtTolerance:
+        type: "string"
+        format: "string"
+      pHMinimum:
+        type: "string"
+        format: "string"
+      coldStratificationRequired:
+        type: "string"
+        format: "string"
+      plantingDensityPerAcreMinimum:
+        type: "string"
+        format: "string"
+      lowGrowingGrass:
+        type: "string"
+        format: "string"
+      propogatedByBulbs:
+        type: "string"
+        format: "string"
+      kingdom:
+        type: "string"
+        format: "string"
+      stateNoxiousCommonName:
+        type: "string"
+        format: "string"
+      propogatedBySod:
+        type: "string"
+        format: "string"
+      fuelwoodProduct:
+        type: "string"
+        format: "string"
+      palatableHuman:
+        type: "string"
+        format: "string"
+      fallConspicuous:
+        type: "string"
+        format: "string"
+      foliagePorositySummer:
+        type: "string"
+        format: "string"
+      palatableBrowseAnimal:
+        type: "string"
+        format: "string"
+      category:
+        type: "string"
+        format: "string"
+      family:
+        type: "string"
+        format: "string"
+      propogatedByContainer:
+        type: "string"
+        format: "string"
+      temperatureMinimumF:
+        type: "string"
+        format: "string"
+      pHMaximum:
+        type: "string"
+        format: "string"
+    description: "a plant object"
+  notFoundError:
+    type: "object"
+    required:
+    - "message"
+    properties:
+      message:
+        type: "string"
+    description: "a not found error usually with status code 404"
+  awsError:
+    type: "object"
+    required:
+    - "message"
+    properties:
+      message:
+        type: "string"
+    description: "an aws internal server error, usually with status code 502 (bad\
+      \ gateway)"
+  plantList:
+    type: "object"
+    properties:
+      data:
+        type: "array"
+        items:
+          $ref: "#/definitions/plant"
+      meta:
+        type: "object"
+        properties:
+          pages:
+            type: "number"
+          citation:
+            type: "string"
+          count:
+            type: "number"
+      links:
+        type: "object"
+        properties:
+          next:
+            type: "string"
+          previous:
+            type: "string"
+          last:
+            type: "string"
+          self:
+            type: "string"
+    description: "a list of plant objects"

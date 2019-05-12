@@ -1,29 +1,678 @@
-service: serverless-nestjs
+service: shrubbist-apis
 
 provider:
   name: aws
   runtime: nodejs8.10
+  stage: production
+  region: us-west-2
+  environment:
+    NODE_ENV: production
+    SERVICE_DOMAIN: apis.shrubbist.com
+    SERVICE_VERSION: '1.0'
+    SEARCH_URL:
+      Fn::GetAtt: ['PlantSearch', 'DomainEndpoint']
 
-plugins:
-  - serverless-offline
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - es:ESHttpGet
+        - es:ESHttpPost
+      Resource:
+        - { 'Fn::GetAtt': ['PlantSearch', 'DomainArn'] }
+        - {
+            'Fn::Join':
+              ['', ['Fn::GetAtt': ['PlantSearch', 'DomainArn'], '/*']],
+          }
+
+resources:
+  Resources:
+    PlantSearch:
+      Type: 'AWS::Elasticsearch::Domain'
+      Properties:
+        ElasticsearchVersion: '6.4'
+        DomainName: 'shrubbist-apis-1dot0-search'
+        ElasticsearchClusterConfig:
+          DedicatedMasterEnabled: false
+          InstanceCount: '1'
+          ZoneAwarenessEnabled: false
+          InstanceType: 't2.small.elasticsearch'
+        EBSOptions:
+          EBSEnabled: true
+          Iops: 0
+          VolumeSize: 10
+          VolumeType: 'gp2'
+        AdvancedOptions:
+          rest.action.multi.allow_explicit_index: 'true'
+
+functions:
+  index:
+    handler: dist/index.handler
+    timeout: 30
+    events:
+      - http:
+          cors: true
+          path: '/plants/heartbeat'
+          method: get
+          documentation:
+            summary: "check the health of the plants endpoint"
+          methodResponses:
+            -
+              statusCode: "200"
+            -
+              statusCode: "502"
+              responseModels:
+                "application/json": "awsError"
+            -
+              statusCode: "503"
+              responseModels:
+                "application/json": "serviceError"
+      - http:
+          cors: true
+          path: '/plants/search'
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.querystring.q
+              - name: request.querystring.page.number
+          documentation:
+            summary: "search plants"
+            queryParams:
+              -
+                name: "q"
+                required: true
+                description: "the search term to use"
+              -
+                name: "page.number"
+                required: false
+                description: "the page to return"
+            methodResponses:
+              -
+                statusCode: "200"
+                responseBody:
+                  description: "a list of plant objects"
+                responseModels:
+                  "application/json": "plantList"
+              -
+                statusCode: "404"
+                responseModels:
+                  "application/json": "notFoundError"
+              -
+                statusCode: "502"
+                responseModels:
+                  "application/json": "awsError"
+              -
+                statusCode: "503"
+                responseModels:
+                  "application/json": "serviceError"
+      - http:
+          cors: true
+          path: '/plants/{plantId}'
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.path.plantId
+          documentation:
+            summary: "get a plant by its id"
+            pathParams:
+              -
+                name: "id"
+                required: true
+                description: "the id of the plant to get"
+            methodResponses:
+              -
+                statusCode: "200"
+                responseBody:
+                  description: "a plant object"
+                responseModels:
+                  "application/json": "onePlant"
+              -
+                statusCode: "404"
+                responseModels:
+                  "application/json": "notFoundError"
+              -
+                statusCode: "502"
+                responseModels:
+                  "application/json": "awsError"
+              -
+                statusCode: "503"
+                responseModels:
+                  "application/json": "serviceError"
 
 package:
+  individually: true
   exclude:
     - .git/**
     - src/**
     - test/**
     - nodemon.json
     - README.md
+    - scripts/**
 
-functions:
-  index:
-    handler: dist/index.handler
-    events:
-    - http:
-        cors: true
-        path: '/'
-        method: any
-    - http:
-        cors: true
-        path: '{proxy+}'
-        method: any
+plugins:
+  - serverless-plugin-optimize
+  - serverless-api-gateway-caching
+  - serverless-api-compression
+  - serverless-domain-manager
+  - serverless-offline
+  - serverless-aws-documentation
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+  contentEncoding:
+    contentCompression: 100
+  customDomain:
+    domainName: apis.shrubbist.com
+    basePath: '1.0'
+    stage: production
+    certificateName: 'shrubbist.com'
+    createRoute53Record: true
+  documentation:
+    api:
+      info:
+        version: '1.0'
+        title: Shrubbist APIs
+        description: APIs supporting shrubbist.com
+        license:
+          name: MIT
+          url: https://github.com/iankerriganharris/shrubbist-apis/blob/master/LICENSE
+    resources:
+      -
+        path: "1.0/plants/{id}"
+        description: "Path used for getting a plant by its id"
+      -
+        path: "1.0/plants/search"
+        description: "Path used for searching for plants"
+    models:
+      -
+        name: "awsError"
+        description: "an aws internal server error, usually with status code 502 (bad gateway)"
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+          required:
+            - message
+      -
+        name: "serviceError"
+        description: "a service error usually with status code 503"
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+          required:
+            - message
+      -
+        name: "notFoundError"
+        description: "a not found error usually with status code 404"
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+          required:
+            - message
+      -
+        name: "plant"
+        description: "a plant object"
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            acceptedSymbolX:
+              type: string
+              format: string
+            acceptedSymbolY:
+              type: string
+              format: string
+            activeGrowthPeriod:
+              type: string
+              format: string
+            adaptedToCoarseuredSoils:
+              type: string
+              format: string
+            adaptedToFineuredSoils:
+              type: string
+              format: string
+            adaptedToMediumuredSoils:
+              type: string
+              format: string
+            afterHarvestRegrowthRate:
+              type: string
+              format: string
+            anaerobicTolerance:
+              type: string
+              format: string
+            berryNutSeedProduct:
+              type: string
+              format: string
+            bloat:
+              type: string
+              format: string
+            bloomPeriod:
+              type: string
+              format: string
+            cNRatio:
+              type: string
+              format: string
+            caCo3Tolerance:
+              type: string
+              format: string
+            category:
+              type: string
+              format: string
+            christmasTreeProduct:
+              type: string
+              format: string
+            class:
+              type: string
+              format: string
+            coldStratificationRequired:
+              type: string
+              format: string
+            commercialAvailability:
+              type: string
+              format: string
+            commonName:
+              type: string
+              format: string
+            coppicePotential:
+              type: string
+              format: string
+            division:
+              type: string
+              format: string
+            droughtTolerance:
+              type: string
+              format: string
+            duration:
+              type: string
+              format: string
+            fallConspicuous:
+              type: string
+              format: string
+            family:
+              type: string
+              format: string
+            familyCommonName:
+              type: string
+              format: string
+            familySymbol:
+              type: string
+              format: string
+            federalNoxiousStatus:
+              type: string
+              format: string
+            federalTEStatus:
+              type: string
+              format: string
+            fertilityRequirement:
+              type: string
+              format: string
+            fireResistance:
+              type: string
+              format: string
+            fireTolerance:
+              type: string
+              format: string
+            flowerColor:
+              type: string
+              format: string
+            flowerConspicuous:
+              type: string
+              format: string
+            fodderProduct:
+              type: string
+              format: string
+            foliageColor:
+              type: string
+              format: string
+            foliagePorositySummer:
+              type: string
+              format: string
+            foliagePorosityWinter:
+              type: string
+              format: string
+            foliageure:
+              type: string
+              format: string
+            forma:
+              type: string
+              format: string
+            formaPrefix:
+              type: string
+              format: string
+            frostFreeDaysMinimum:
+              type: string
+              format: string
+            fruitColor:
+              type: string
+              format: string
+            fruitConspicuous:
+              type: string
+              format: string
+            fruitSeedAbundance:
+              type: string
+              format: string
+            fruitSeedPeriodBegin:
+              type: string
+              format: string
+            fruitSeedPeriodEnd:
+              type: string
+              format: string
+            fruitSeedPersistence:
+              type: string
+              format: string
+            fuelwoodProduct:
+              type: string
+              format: string
+            generaBinomialAuthor:
+              type: string
+              format: string
+            genus:
+              type: string
+              format: string
+            growthForm:
+              type: string
+              format: string
+            growthHabit:
+              type: string
+              format: string
+            growthRate:
+              type: string
+              format: string
+            hedgeTolerance:
+              type: string
+              format: string
+            heightAtBaseAgeMaximumFeet:
+              type: string
+              format: string
+            heightMatureFeet:
+              type: string
+              format: string
+            hybridGenusIndicator:
+              type: string
+              format: string
+            hybridSpeciesIndicator:
+              type: string
+              format: string
+            hybridSubspeciesIndicator:
+              type: string
+              format: string
+            hybridVarietyIndicator:
+              type: string
+              format: string
+            id:
+              type: string
+              format: uuid
+            invasive:
+              type: string
+              format: string
+            kingdom:
+              type: string
+              format: string
+            knownAllelopath:
+              type: string
+              format: string
+            leafRetention:
+              type: string
+              format: string
+            lifespan:
+              type: string
+              format: string
+            lowGrowingGrass:
+              type: string
+              format: string
+            lumberProduct:
+              type: string
+              format: string
+            moistureUse:
+              type: string
+              format: string
+            nativeStatus:
+              type: string
+              format: string
+            navalStoreProduct:
+              type: string
+              format: string
+            nitrogenFixation:
+              type: string
+              format: string
+            nurseryStockProduct:
+              type: string
+              format: string
+            pHMaximum:
+              type: string
+              format: string
+            pHMinimum:
+              type: string
+              format: string
+            palatableBrowseAnimal:
+              type: string
+              format: string
+            palatableGrazeAnimal:
+              type: string
+              format: string
+            palatableHuman:
+              type: string
+              format: string
+            parents:
+              type: string
+              format: string
+            plantingDensityPerAcreMaximum:
+              type: string
+              format: string
+            plantingDensityPerAcreMinimum:
+              type: string
+              format: string
+            postProduct:
+              type: string
+              format: string
+            precipitationMaximum:
+              type: string
+              format: string
+            precipitationMinimum:
+              type: string
+              format: string
+            propogatedByBareRoot:
+              type: string
+              format: string
+            propogatedByBulbs:
+              type: string
+              format: string
+            propogatedByContainer:
+              type: string
+              format: string
+            propogatedByCorms:
+              type: string
+              format: string
+            propogatedByCuttings:
+              type: string
+              format: string
+            propogatedBySeed:
+              type: string
+              format: string
+            propogatedBySod:
+              type: string
+              format: string
+            propogatedBySprigs:
+              type: string
+              format: string
+            propogatedByTubers:
+              type: string
+              format: string
+            proteinPotential:
+              type: string
+              format: string
+            pulpwoodProduct:
+              type: string
+              format: string
+            quadranomialAuthor:
+              type: string
+              format: string
+            questionableTaxonIndicator:
+              type: string
+              format: string
+            resproutAbility:
+              type: string
+              format: string
+            rootDepthMinimumInches:
+              type: string
+              format: string
+            salinityTolerance:
+              type: string
+              format: string
+            scientificNameX:
+              type: string
+              format: string
+            scientificNameY:
+              type: string
+              format: string
+            seedSpreadRate:
+              type: string
+              format: string
+            seedlingVigor:
+              type: string
+              format: string
+            seedsPerPound:
+              type: string
+              format: string
+            serialIdlong:
+              type: string
+              format: string
+            shadeTolerance:
+              type: string
+              format: string
+            shapeAndOrientation:
+              type: string
+              format: string
+            smallGrain:
+              type: string
+              format: string
+            species:
+              type: string
+              format: string
+            stateAndProvince:
+              type: string
+              format: string
+            stateNoxiousCommonName:
+              type: string
+              format: string
+            stateNoxiousStatus:
+              type: string
+              format: string
+            stateTECommonName:
+              type: string
+              format: string
+            stateTEStatus:
+              type: string
+              format: string
+            subClass:
+              type: string
+              format: string
+            subDivision:
+              type: string
+              format: string
+            subKingdom:
+              type: string
+              format: string
+            subspecies:
+              type: string
+              format: string
+            subspeciesPrefix:
+              type: string
+              format: string
+            subvariety:
+              type: string
+              format: string
+            subvarietyPrefix:
+              type: string
+              format: string
+            superDivision:
+              type: string
+              format: string
+            symbol:
+              type: string
+              format: string
+            synonymSymbolX:
+              type: string
+              format: string
+            synonymSymbolY:
+              type: string
+              format: string
+            temperatureMinimumF:
+              type: string
+              format: string
+            toxicity:
+              type: string
+              format: string
+            trinomialAuthor:
+              type: string
+              format: string
+            variety:
+              type: string
+              format: string
+            varietyPrefix:
+              type: string
+              format: string
+            vegetativeSpreadRate:
+              type: string
+              format: string
+            veneerProduct:
+              type: string
+              format: string
+            xOrder:
+              type: string
+              format: string
+      -
+        name: "onePlant"
+        description: "response to get plant by id"
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            data:
+              $ref: "{{model: plant}}"
+            meta:
+              type: object
+              properties:
+                citation:
+                  type: string
+      -
+        name: "plantList"
+        description: "a list of plant objects"
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "{{model: plant}}"
+            links:
+              type: object
+              properties:
+                self:
+                  type: string
+                previous:
+                  type: string
+                next:
+                  type: string
+                last:
+                  type: string
+            meta:
+              type: object
+              properties:
+                count:
+                  type: number
+                pages:
+                  type: number
+                citation:
+                  type: string
