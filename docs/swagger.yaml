@@ -2,8 +2,8 @@
 swagger: "2.0"
 info:
   description: "APIs supporting shrubbist.com"
-  version: "2019-05-12T18:17:11Z"
-  title: "production-serverless-nestjs"
+  version: "2019-05-12T18:51:47Z"
+  title: "production-shrubbist-apis"
   license:
     name: "MIT"
     url: "https://github.com/iankerriganharris/shrubbist-apis/blob/master/LICENSE"
