@@ -175,7 +175,7 @@ custom:
       info:
         version: '1.0'
         title: Shrubbist APIs
-        description: APIs supporting shrubbist.com
+        description: Public APIs created by shrubbist.com
         license:
           name: MIT
           url: https://github.com/iankerriganharris/shrubbist-apis/blob/master/LICENSE
