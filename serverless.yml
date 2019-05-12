@@ -149,6 +149,7 @@ package:
     - nodemon.json
     - README.md
     - scripts/**
+    - docs/**
 
 plugins:
   - serverless-plugin-optimize
