@@ -2,7 +2,7 @@
   "swagger" : "2.0",
   "info" : {
     "description" : "Public APIs created by shrubbist.com",
-    "version" : "2019-05-12T18:51:47Z",
+    "version" : "2019-05-12T22:08:51Z",
     "title" : "production-shrubbist-apis",
     "license" : {
       "name" : "MIT",
@@ -117,13 +117,8 @@
         "parameters" : [ {
           "name" : "plantId",
           "in" : "path",
-          "required" : false,
-          "type" : "string"
-        }, {
-          "name" : "id",
-          "in" : "path",
           "description" : "the id of the plant to get",
-          "required" : true,
+          "required" : false,
           "type" : "string"
         } ],
         "responses" : {

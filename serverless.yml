@@ -117,7 +117,7 @@ functions:
             summary: "get a plant by its id"
             pathParams:
               -
-                name: "id"
+                name: "plantId"
                 required: true
                 description: "the id of the plant to get"
             methodResponses:
